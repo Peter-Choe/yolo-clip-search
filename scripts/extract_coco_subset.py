@@ -4,23 +4,32 @@ import json
 from pycocotools.coco import COCO
 from tqdm import tqdm
 import random
+from datetime import datetime
 
-# === 🔧 Config ===
+# === Config ===
 COCO_IMAGE_DIR = "datasets/coco/train2017"
 COCO_ANNOTATION_FILE = "datasets/coco/annotations/instances_train2017.json"
-OUT_DIR = "datasets/coco_subset"
 
-TARGET_CATEGORIES = ["person", "car", "cell phone", "laptop", "book", "bench", "sports ball"]
-MAX_PER_CATEGORY = 500  # 80%:400 train, 10%:50 val, 10%:50 test
+version=3
+BASE_OUT_DIR = "datasets/coco_subset"
+OUT_DIR = os.path.join(BASE_OUT_DIR, f"version_{version}")
 
+# 클래스별 최대 이미지 수 설정
+MAX_PER_CATEGORY_DICT = {
+    "person": 3000,         # reduced from 64K 
+    "car": 5000,            # reduced from 12K 
+    "cell phone": 4803,     # full
+    "laptop": 3524,         # full
+    "book": 5332,           # full
+    "handbag": 6841,        # full
+    "sports ball": 4262     # full
+}
+DEFAULT_MAX = 3000
+TARGET_CATEGORIES = list(MAX_PER_CATEGORY_DICT.keys())
 RANDOM_SEED = 42
 random.seed(RANDOM_SEED)
 
 def split_and_copy(img_ids, cat_name, name2id, coco, split_ratios):
-    """
-    Splits img_ids into train/val/test and copies images.
-    Returns meta dicts.
-    """
     random.shuffle(img_ids)
     n_total = len(img_ids)
     n_train = int(n_total * split_ratios["train"])
@@ -65,8 +74,9 @@ def main():
     for cat_name in TARGET_CATEGORIES:
         cat_id = name2id[cat_name]
         img_ids = coco.getImgIds(catIds=[cat_id])
-        selected = img_ids[:MAX_PER_CATEGORY]
-        print(f"[INFO] Category '{cat_name}': selected {len(selected)} images")
+        max_n = MAX_PER_CATEGORY_DICT.get(cat_name, DEFAULT_MAX)
+        selected = img_ids[:max_n]
+        print(f"[INFO] Category '{cat_name}': selected {len(selected)} / requested {max_n}")
 
         split_meta = split_and_copy(
             selected, cat_name, name2id, coco,
@@ -76,12 +86,25 @@ def main():
         for split in ["train", "val", "test"]:
             all_meta[split].extend(split_meta[split])
 
-    # Save metadata per split
+    # Save metadata
     for split in ["train", "val", "test"]:
         meta_path = os.path.join(OUT_DIR, f"subset_meta_{split}.json")
         with open(meta_path, "w") as f:
             json.dump(all_meta[split], f, indent=2)
         print(f"Saved {len(all_meta[split])} entries to {meta_path}")
+
+    # Save class count summary per split
+    for split in ["train", "val", "test"]:
+        class_counts = {}
+        for entry in all_meta[split]:
+            cat = entry["category"]
+            class_counts[cat] = class_counts.get(cat, 0) + 1
+
+        stats_path = os.path.join(OUT_DIR, f"class_counts_{split}.json")
+        with open(stats_path, "w") as f:
+            json.dump(class_counts, f, indent=2)
+        print(f"[INFO] Saved class count stats to {stats_path}")
+
 
 if __name__ == "__main__":
     main()

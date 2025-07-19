@@ -48,7 +48,7 @@ datasets/coco/annotations/
 datasets/*/images/
 datasets/*/subset_meta*.json
 datasets/*/labels/
-datasets/coco128/
+datasets/coco_subset/
 # === YOLOv5 outputs ===
 yolov5/runs/
 yolov5/weights/

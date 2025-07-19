@@ -4,12 +4,13 @@ from pycocotools.coco import COCO
 from tqdm import tqdm
 
 # === Config ===
+
+SUBSET_DIR = "datasets/coco_subset/version_3"
+# Target categories and mapping to YOLO class ids
+TARGET_CATEGORIES = ["person", "car", "cell phone", "laptop", "book", "handbag", "sports ball"]
 COCO_ANNOTATION_FILE = "datasets/coco/annotations/instances_train2017.json"
-SUBSET_DIR = "datasets/coco_subset"
 SPLITS = ["train", "val", "test"]
 
-# Target categories and mapping to YOLO class ids
-TARGET_CATEGORIES = ["person", "car", "cell phone", "laptop", "book", "bench", "sports ball"]
 category_to_id = {name: idx for idx, name in enumerate(TARGET_CATEGORIES)}
 
 def convert_bbox_xywh_to_yolo(bbox, img_w, img_h):
