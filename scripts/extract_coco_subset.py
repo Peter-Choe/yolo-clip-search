@@ -11,7 +11,7 @@ COCO_ANNOTATION_FILE = "datasets/coco/annotations/instances_train2017.json"
 OUT_DIR = "datasets/coco_subset"
 
 TARGET_CATEGORIES = ["person", "car", "cell phone", "laptop", "book", "bench", "sports ball"]
-MAX_PER_CATEGORY = 300  # 80%:240 train, 10%:30 val, 10%:30 test
+MAX_PER_CATEGORY = 500  # 80%:400 train, 10%:50 val, 10%:50 test
 
 RANDOM_SEED = 42
 random.seed(RANDOM_SEED)
@@ -81,7 +81,7 @@ def main():
         meta_path = os.path.join(OUT_DIR, f"subset_meta_{split}.json")
         with open(meta_path, "w") as f:
             json.dump(all_meta[split], f, indent=2)
-        print(f"[✔] Saved {len(all_meta[split])} entries to {meta_path}")
+        print(f"Saved {len(all_meta[split])} entries to {meta_path}")
 
 if __name__ == "__main__":
     main()

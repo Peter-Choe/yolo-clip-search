@@ -35,6 +35,7 @@ logs/
 *.pt
 runs/
 mlruns/
+mlartifacts/
 *.mlmodel
 weights/
 checkpoints/
@@ -47,7 +48,7 @@ datasets/coco/annotations/
 datasets/*/images/
 datasets/*/subset_meta*.json
 datasets/*/labels/
-
+datasets/coco128/
 # === YOLOv5 outputs ===
 yolov5/runs/
 yolov5/weights/
@@ -65,6 +66,7 @@ pgvector_data/
 # === Docker ===
 *.pid
 *.pid.lock
+Dockerfile
 *.tar
 *.img
 *.db
