@@ -1,0 +1,86 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+*.pyo
+*.egg
+*.egg-info/
+dist/
+build/
+
+# === Jupyter Notebooks ===
+.ipynb_checkpoints/
+
+# === Environment Files ===
+.env
+.env.*
+*.env
+*.venv
+.venv/
+venv/
+ENV/
+env.bak/
+env/
+
+# === Conda ===
+*.conda
+conda-meta/
+
+# === Logs & Checkpoints ===
+logs/
+*.log
+*.ckpt
+*.pth
+*.pt
+runs/
+mlruns/
+*.mlmodel
+weights/
+checkpoints/
+
+# === Datasets ===
+datasets/coco/train2017/
+datasets/coco/val2017/
+datasets/coco/test2017/
+datasets/coco/annotations/
+datasets/*/images/
+datasets/*/subset_meta*.json
+datasets/*/labels/
+
+# === YOLOv5 outputs ===
+yolov5/runs/
+yolov5/weights/
+
+# === FAISS Index Files ===
+*.index
+*.faiss
+faiss_indexes/
+faiss_output/
+
+# === PGVector DB Files ===
+*.pgdata
+pgvector_data/
+
+# === Docker ===
+*.pid
+*.pid.lock
+*.tar
+*.img
+*.db
+*.sock
+
+# === VSCode & IDEs ===
+.vscode/
+.idea/
+*.code-workspace
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Misc ===
+*.zip
+*.tar.gz
+*.bak
+*.tmp
