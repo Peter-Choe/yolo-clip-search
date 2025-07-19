@@ -19,9 +19,9 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 ENV PATH=$CONDA_DIR/bin:$PATH
 
 # 3. Conda 환경 생성 및 faiss-gpu 포함 패키지 설치
-COPY environment.yml /tmp/environment.yml
+COPY environment.yaml /tmp/environment.yaml
 RUN conda update -n base -c defaults conda && \
-    conda env create -f /tmp/environment.yml && \
+    conda env create -f /tmp/environment.yaml && \
     conda clean -a
 ENV CONDA_DEFAULT_ENV=aiisom
 ENV PATH=$CONDA_DIR/envs/aiisom/bin:$PATH
