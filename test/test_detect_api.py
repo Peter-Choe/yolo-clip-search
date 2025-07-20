@@ -1,22 +1,29 @@
 import requests
-import os
+import os ,sys
 import cv2
 import numpy as np
 import random
 from datetime import datetime
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from api.config import RUN_ID
+
+
+
 API_URL = "http://localhost:5000/detect/"
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # ~/image_search
 
 # 입력 디렉토리
-input_dir = os.path.join(ROOT_DIR, "datasets/coco_subset/images/test")
+input_dir = os.path.join(ROOT_DIR, "datasets/coco_subset/version_3/images/test")
 
 # 처리할 이미지 수
-N = 30
+N = 50
+
 
 # 현재 시각 기반으로 고유 output 디렉토리 생성
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-output_dir = os.path.join(ROOT_DIR, f"test/detect_output_images/run_{timestamp}_{N}")
+timestamp = datetime.now().strftime("%H%M%S")
+output_dir = os.path.join(ROOT_DIR, f"test/output_images/run_{RUN_ID}_{timestamp}_{N}")
 os.makedirs(output_dir, exist_ok=True)
 
 # 이미지 리스트 가져오기

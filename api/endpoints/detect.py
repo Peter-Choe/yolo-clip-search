@@ -25,10 +25,13 @@ router = APIRouter()
 
 @router.post("/detect/", response_model=DetectionResponse)
 async def detect_objects(file: UploadFile = File(...)):
-    img = load_image_from_bytes(await file.read())
-    results = model(img)
+    img = load_image_from_bytes(await file.read())  # 업로드된 이미지를 bytes로부터 로딩
+    results = model(img) # YOLOv5 모델 추론 실행
 
     raw_detections = results.pandas().xyxy[0].to_dict(orient="records")
+    # 추론 결과를 판다스 DataFrame 형식으로 변환하고 dict 리스트로 추출
+    # results.pandas().xyxy[0]은 다음과 같은 열을 포함함:
+    # ['xmin', 'ymin', 'xmax', 'ymax', 'confidence', 'class', 'name']
 
     # 'class' → 'class_id'로 이름 변경
     formatted_detections = []

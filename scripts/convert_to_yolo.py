@@ -3,6 +3,10 @@ import json
 from pycocotools.coco import COCO
 from tqdm import tqdm
 
+"""
+COCO ->YOLO 형식 라벨 변환 스크립트
+"""
+
 # === Config ===
 
 SUBSET_DIR = "datasets/coco_subset/version_3"
@@ -14,6 +18,9 @@ SPLITS = ["train", "val", "test"]
 category_to_id = {name: idx for idx, name in enumerate(TARGET_CATEGORIES)}
 
 def convert_bbox_xywh_to_yolo(bbox, img_w, img_h):
+   """
+    COCO 포맷 (x, y, w, h) → YOLO 포맷 (x_center/img_w, y_center/img_h, w/img_w, h/img_h)
+    """
     x, y, w, h = bbox
     x_center = x + w / 2
     y_center = y + h / 2
