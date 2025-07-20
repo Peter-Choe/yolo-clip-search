@@ -6,13 +6,14 @@ from tqdm import tqdm
 import random
 from datetime import datetime
 
-
+from clip_embedder.utils import safe_write_json
 """
 COCO Subset Split & Metadata Generator
 
-COCO 데이터셋에서 MAX_PER_CATEGORY_DICT에 지정한 카테고리들의 지정한 수만큼 이미지를 추출하여
-학습(train), 검증(val), 테스트(test) 비율로 분할하고,
-이미지 파일을 복사한 뒤 관련 메타정보 및 클래스 분포 통계를 JSON 형식으로 저장합니다.
+COCO 데이터셋에서 `MAX_PER_CATEGORY_DICT`에 지정된 카테고리별로 
+설정된 수만큼 이미지를 추출한 후, 학습(train), 검증(val), 테스트(test) 비율로 분할합니다.
+각 이미지 파일은 분할된 디렉토리로 복사되며, 
+해당 메타정보와 클래스별 분포 통계는 JSON 형식으로 저장됩니다.
 
 출력 결과:
 - images/train, images/val, images/test 디렉토리로 이미지 복사
@@ -21,7 +22,7 @@ COCO 데이터셋에서 MAX_PER_CATEGORY_DICT에 지정한 카테고리들의 �
 """
 
 # === Config ===
-VERSION=3
+VERSION=4
 COCO_IMAGE_DIR = "datasets/coco/train2017"
 COCO_ANNOTATION_FILE = "datasets/coco/annotations/instances_train2017.json"
 BASE_OUT_DIR = "datasets/coco_subset"
@@ -30,7 +31,7 @@ OUT_DIR = os.path.join(BASE_OUT_DIR, f"version_{VERSION}")
 # 클래스별로 COCO 데이터셋에서 추출할 이미지 수 설정
 MAX_PER_CATEGORY_DICT = {
     "person": 3000,         # reduced from 64K 
-    "car": 5000,            # reduced from 12K 
+    "car": 6000,            # reduced from 12K 
     "cell phone": 4803,     # full
     "laptop": 3524,         # full
     "book": 5332,           # full
@@ -47,47 +48,63 @@ def split_and_copy(img_ids, cat_name, name2id, coco, split_ratios):
     """
     이미지 ID 목록을 학습/검증/테스트로 분할하고,
     각 이미지 파일을 대상 디렉토리로 복사한 후 메타 정보를 생성
+    (bbox는 [x1, y1, x2, y2] 형태로 변환됨)
     """
-    random.shuffle(img_ids)  # 이미지 순서를 무작위로 섞음 (편향 방지)
+    import os
+    import shutil
+    import random
 
-    # 분할 개수 계산
+    random.shuffle(img_ids)  # 이미지 순서를 무작위로 섞음
+
     n_total = len(img_ids)
     n_train = int(n_total * split_ratios["train"])
     n_val = int(n_total * split_ratios["val"])
-    n_test = n_total - n_train - n_val  # 나머지는 test로
+    n_test = n_total - n_train - n_val
 
-    # split 딕셔너리에 이미지 ID 분할 저장
     splits = {
         "train": img_ids[:n_train],
         "val": img_ids[n_train:n_train + n_val],
         "test": img_ids[n_train + n_val:]
     }
 
-    split_meta = {"train": [], "val": [], "test": []}  # 각 split별 메타데이터 저장용
+    split_meta = {"train": [], "val": [], "test": []}
 
     for split_name, ids in splits.items():
         for img_id in ids:
-            img_info = coco.loadImgs(img_id)[0]  # COCO에서 이미지 정보 로딩
+            img_info = coco.loadImgs(img_id)[0]
             file_name = img_info["file_name"]
 
-            # 원본 이미지 경로
+            # 이미지 경로 복사
             src_path = os.path.join(COCO_IMAGE_DIR, file_name)
-            # 복사할 대상 디렉토리 및 경로
             dst_dir = os.path.join(OUT_DIR, "images", split_name)
             dst_path = os.path.join(dst_dir, file_name)
 
-            os.makedirs(dst_dir, exist_ok=True)  # 디렉토리 없으면 생성
+            os.makedirs(dst_dir, exist_ok=True)
             if not os.path.exists(dst_path):
-                shutil.copy(src_path, dst_path)  # 이미지 복사
+                shutil.copy(src_path, dst_path)
 
-            # 메타데이터 저장
+            # 이 이미지에 속한 annotation 목록 가져오기
+            anns = coco.loadAnns(coco.getAnnIds(imgIds=img_id, catIds=[name2id[cat_name]], iscrowd=None))
+
+            # bbox 변환: [x, y, w, h] → [x1, y1, x2, y2]
+            bboxes = []
+            category_names = []
+            for ann in anns:
+                x, y, w, h = ann["bbox"]
+                x1, y1 = x, y
+                x2, y2 = x + w, y + h
+                bboxes.append([x1, y1, x2, y2])
+                category_names.append(cat_name)
+
             split_meta[split_name].append({
                 "id": img_id,
                 "file_name": file_name,
                 "category": cat_name,
                 "coco_url": img_info.get("coco_url", ""),
                 "width": img_info["width"],
-                "height": img_info["height"]
+                "height": img_info["height"],
+                "bboxes": bboxes,
+                "category_names": category_names
             })
 
     return split_meta
@@ -122,25 +139,25 @@ def main():
         for split in ["train", "val", "test"]:
             all_meta[split].extend(split_meta[split])
 
+    meta_dir = os.path.join(OUT_DIR, "meta")
+    os.makedirs(meta_dir, exist_ok=True)
+
     # split별 메타데이터 JSON 파일로 저장
     for split in ["train", "val", "test"]:
-        meta_path = os.path.join(OUT_DIR, f"subset_meta_{split}.json")
-        with open(meta_path, "w") as f:
-            json.dump(all_meta[split], f, indent=2)
-        print(f"Saved {len(all_meta[split])} entries to {meta_path}")
+        meta_data = all_meta[split]
+        meta_path = os.path.join(meta_dir, f"subset_meta_{split}.json")
+        safe_write_json(meta_data, meta_path)
+        print(f"Saved {len(meta_data)} annotations to {meta_path}")
 
-    # split별 클래스별 개수 통계 저장
     for split in ["train", "val", "test"]:
         class_counts = {}
         for entry in all_meta[split]:
             cat = entry["category"]
             class_counts[cat] = class_counts.get(cat, 0) + 1
 
-        stats_path = os.path.join(OUT_DIR, f"class_counts_{split}.json")
-        with open(stats_path, "w") as f:
-            json.dump(class_counts, f, indent=2)
-        print(f"[INFO] Saved class count stats to {stats_path}")
-
+        stats_path = os.path.join(meta_dir, f"class_counts_{split}.json")
+        safe_write_json(class_counts, stats_path)
+        print(f"Saved class count stats to {stats_path}")
 
 
 if __name__ == "__main__":

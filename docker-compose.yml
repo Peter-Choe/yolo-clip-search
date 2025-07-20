@@ -1,4 +1,3 @@
-version: "3.9"
 
 services:
   backend:
@@ -14,5 +13,23 @@ services:
             - capabilities: [gpu]
     volumes:
       - .:/app
+      - ./clip_embedder/faiss_indexes:/app/clip_embedder/faiss_indexes  # 로컬 faiss_index → 컨테이너 내부 마운트
+
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
+  
+  pgvector:
+    image: ankane/pgvector:latest
+    container_name: pgvector-db
+    ports:
+      - "18152:5432"
+    environment:
+      POSTGRES_DB: clipdb
+      POSTGRES_USER: clipuser
+      POSTGRES_PASSWORD: clippass
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+      - ./pgvector/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  pgvector_data:
