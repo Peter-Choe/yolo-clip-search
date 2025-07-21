@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 from clip_embedder.db import get_session
 from clip_embedder.models import Crop
 from api.utils.detect_utils import detect_bboxes_from_pil, choose_best_bbox
+from api.utils.image_utils import  pil_to_base64, draw_bbox_on_image
 from transformers import CLIPModel, CLIPProcessor
 import torch
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 import faiss
 import numpy as np
 import tempfile
@@ -40,16 +41,32 @@ async def search_similar_crop(
     k: int = 5,
     session: Session = Depends(get_session)
 ):
+    print(f"[DEBUG] 업로드 파일 이름: {file.filename}")
+    print(f"[DEBUG] 업로드 content type: {file.content_type}")
+
     # 1. 이미지 파일 확인 및 로딩
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다.")
 
     content = await file.read()
+    print(f"[DEBUG] 파일 바이트 수: {len(content)}")
 
+    # 3. 이미지 열기
     try:
+        image_buf = BytesIO(content)
+        image = Image.open(image_buf)
+        image.verify()  # 이미지가 유효한지 검사 (파일은 닫힘)
+        print("[DEBUG] 이미지 검증 완료 (verify 통과)")
+
+        # 다시 열기 (verify()는 파일을 닫으므로)
         image = Image.open(BytesIO(content)).convert("RGB")
+    except UnidentifiedImageError as e:
+        print(f"[ERROR] PIL 이미지 식별 실패: {e}")
+        raise HTTPException(status_code=400, detail=f"이미지 포맷을 인식할 수 없습니다: {str(e)}")
     except Exception as e:
+        print(f"[ERROR] 기타 이미지 로딩 실패: {e}")
         raise HTTPException(status_code=400, detail=f"이미지 파일 열기에 실패했습니다: {str(e)}")
+
 
     print("[DEBUG] 이미지 로딩 완료")
 
@@ -72,6 +89,7 @@ async def search_similar_crop(
     inputs = clip_processor(images=cropped, return_tensors="pt").to(device)
     with torch.no_grad():
         emb = clip_model.get_image_features(**inputs)
+        # L2-normalize query embeddings, the correct practice for cosine similarity.
         emb = emb / emb.norm(p=2, dim=-1, keepdim=True)
         emb = emb.cpu().numpy()
 
@@ -111,6 +129,13 @@ async def search_similar_crop(
     for crop_id, score in zip(matched_ids, scores):
         crop = crop_map.get(crop_id)
         if crop:
+            # 결과 이미지 불러오기
+            full_img = Image.open(crop.image.image_file_path).convert("RGB")
+            bbox = (crop.x1, crop.y1, crop.x2, crop.y2)
+
+            # bbox가 그려진 이미지 생성
+            img_with_box = draw_bbox_on_image(full_img.copy(), bbox, label=crop.label, color="green")
+
             result.append({
                 "crop_id": crop.id,
                 "crop_path": crop.crop_path,
@@ -124,9 +149,17 @@ async def search_similar_crop(
                     "width": crop.image.width if crop.image else None,
                     "height": crop.image.height if crop.image else None,
                     "coco_url": crop.image.coco_url if crop.image else None,
+                    "image_base64": pil_to_base64(img_with_box)  # Base64 인코딩된 이미지
                 }
             })
 
 
     print(f"[DEBUG] 최종 반환 결과 수: {len(result)}")
-    return result
+
+    query_with_box = draw_bbox_on_image(image.copy(), (x1, y1, x2, y2))
+    query_base64 = pil_to_base64(query_with_box)
+
+    return {
+        "query_image_base64": query_base64,
+        "results": result
+    }

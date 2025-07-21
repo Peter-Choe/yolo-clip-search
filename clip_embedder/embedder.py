@@ -13,6 +13,7 @@ def get_clip_embeddings(image_paths, batch_size=16):
         inputs = processor(images=batch_imgs, return_tensors="pt", padding=True).to(device)
         with torch.no_grad():
             outputs = model.get_image_features(**inputs)
+            #L2-normalize CLIP image embeddings, the correct practice for cosine similarity.
             outputs = outputs / outputs.norm(p=2, dim=-1, keepdim=True)  # Normalize embeddings
         embeddings.extend(outputs.cpu().numpy())
     return embeddings
