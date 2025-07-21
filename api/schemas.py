@@ -14,3 +14,8 @@ class Detection(BaseModel):
 
 class DetectionResponse(BaseModel):
     detections: List[Detection]
+
+
+class SearchTextRequest(BaseModel):
+    text: str  # 검색할 텍스트
+    k: int = 5  # 반환할 유사 이미지 개수 (기본값 5)

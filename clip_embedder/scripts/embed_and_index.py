@@ -9,7 +9,7 @@ import shutil
 from tqdm import tqdm
 from sqlalchemy.exc import IntegrityError
 from PIL import Image
-from clip_embedder.models import ImageRecord, Crop
+from clip_embedder.schemas import ImageRecord, Crop
 from clip_embedder.utils import safe_write_json, load_metadata
 
 from clip_embedder.cropper import crop_objects_with_padding

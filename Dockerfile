@@ -23,7 +23,7 @@ COPY environment.yaml /tmp/environment.yaml
 RUN conda update -n base -c defaults conda && \
     conda env create -f /tmp/environment.yaml && \
     conda clean -a
-ENV CONDA_DEFAULT_ENV=aiisom
+ENV CONDA_DEFAULT_ENV=aisum
 ENV PATH=$CONDA_DIR/envs/aiisom/bin:$PATH
 
 # 4. 작업 디렉토리
@@ -33,4 +33,4 @@ COPY . /app
 # 5. FastAPI 실행 포트
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

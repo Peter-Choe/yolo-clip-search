@@ -5,14 +5,13 @@ from api.utils.image_utils import load_image_from_bytes
 from api.utils.model_utils import download_from_gcs
 from api.schemas import Detection, DetectionResponse  
 from api.utils.detect_utils import detect_bboxes_from_pil
-
 from api import config
 import torch
 import os
 
 
 
-# 3. API 라우터 정의
+# API 라우터 정의
 router = APIRouter()
 
 

@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from clip_embedder.models import Base  
+from clip_embedder.schemas import Base  
 import os   
 
 from dotenv import load_dotenv
