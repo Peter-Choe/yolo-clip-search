@@ -12,10 +12,6 @@ from PIL import Image
 from clip_embedder.models import ImageRecord, Crop
 from clip_embedder.utils import safe_write_json, load_metadata
 
-# 프로젝트 루트 기준으로 clip_embedder 인식
-current_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-sys.path.append(os.path.abspath(os.path.join(current_dir, "..")))
-
 from clip_embedder.cropper import crop_objects
 from clip_embedder.embedder import get_clip_embeddings
 from clip_embedder.db import init_db
@@ -127,6 +123,7 @@ def run_pipeline(
             session.flush()
             pg_ids.append(crop.id)
             valid_embeddings.append(emb) #flush 성공하면 ID 수집 (pg_ids) + embedding 수집 (valid_embeddings)
+            existing_crop_paths.add(crop_path)  # flush 성공 시 set 갱신
         except IntegrityError as e:
             session.rollback() #실패하면 롤백하고 스킵  
             print(f"[SKIP] DB error for {crop_path}: {str(e)}")
@@ -136,13 +133,24 @@ def run_pipeline(
     session.commit()
     print(f" Inserted {len(valid_embeddings)} new crop records.")
 
+
     # FAISS 인덱스 저장
     if skip_faiss_indexing:
         print("Skipping FAISS indexing (flag enabled).")
     else:
+        import pickle
         print(f"Building FAISS index with {len(valid_embeddings)} vectors...")
+        # FAISS 인덱스 저장
+        print(f"[INFO] Valid embeddings: {len(valid_embeddings)}")
+        print(f"[INFO] PG IDs collected: {len(pg_ids)}")
+
         build_faiss_index_with_ids(valid_embeddings, pg_ids, faiss_index_path, use_gpu=use_gpu)
         print(f"FAISS index saved to: {faiss_index_path}")
+        # pg_ids.pkl 저장 (FAISS 인덱스의 각 벡터가 어떤 DB Crop.id에 대응하는지 저장한 ID 리스트)
+        pg_ids_path = faiss_index_path.replace(".index", "_pg_ids.pkl")
+        with open(pg_ids_path, "wb") as f:
+            pickle.dump(pg_ids, f)
+        print(f"pg_ids saved to {pg_ids_path}")
 
 
 
@@ -222,6 +230,9 @@ def build_crop_manifest(meta_data, image_dir, crop_save_dir, manifest_path, min_
 
 
 if __name__ == "__main__":
+
+    print(f' ==============starting pipeline===========')
+
     parser = argparse.ArgumentParser(description="CLIP embedding pipeline with PGVector & FAISS")
     parser.add_argument("--split", type=str, default="val", help="Dataset split: train / val / test")
     #parser.add_argument("--resume", action="store_true", help="Resume from existing crop manifest if available")
@@ -231,11 +242,15 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    print(f'args : {args}')
+
     from dotenv import load_dotenv
     load_dotenv()
     db_url = os.getenv("PGVECTOR_URL")
     if not db_url:
         raise ValueError("PGVECTOR_URL not set in .env file")
+    
+    print(f' ==============db_url: {db_url}===========')
     
     run_pipeline(
     split=args.split,

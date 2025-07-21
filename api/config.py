@@ -5,6 +5,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+print("[DEBUG]", os.getenv("PGVECTOR_URL"))
+
 # GCS 설정
 GCS_BUCKET = os.getenv("GCS_BUCKET", "mlflow-artifacts-bucket-hjchoi")
 EXP_ID = os.getenv("YOLOv5_MLFLOW_EXP_ID", "0")

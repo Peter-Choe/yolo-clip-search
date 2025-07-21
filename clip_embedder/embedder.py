@@ -16,3 +16,5 @@ def get_clip_embeddings(image_paths, batch_size=16):
             outputs = outputs / outputs.norm(p=2, dim=-1, keepdim=True)  # Normalize embeddings
         embeddings.extend(outputs.cpu().numpy())
     return embeddings
+
+

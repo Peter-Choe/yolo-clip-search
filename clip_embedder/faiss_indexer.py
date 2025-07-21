@@ -1,10 +1,8 @@
 import faiss
 import numpy as np
-
-
-import faiss
-import numpy as np
 import os
+import pickle
+
 
 def build_faiss_index_with_ids(embeddings, ids, save_path, use_gpu=False):
     """
@@ -40,3 +38,18 @@ def build_faiss_index_with_ids(embeddings, ids, save_path, use_gpu=False):
 
     faiss.write_index(index_with_ids, save_path)
     print(f"FAISS index saved to {save_path}")
+
+
+
+def load_faiss_index(index_path):
+    # load pg_ids from pickle if exists
+    # FAISS 인덱스의 각 벡터가 어떤 DB Crop.id에 대응하는지 저장한 ID 리스트
+    pg_ids_path = index_path.replace(".index", "_pg_ids.pkl")
+    if not os.path.exists(pg_ids_path):
+        raise FileNotFoundError(f"pg_ids file not found: {pg_ids_path}")
+    
+    with open(pg_ids_path, "rb") as f:
+        pg_ids = pickle.load(f)
+
+    index = faiss.read_index(index_path)
+    return index, pg_ids
