@@ -1,30 +1,44 @@
+version: "3.8"
 
 services:
   backend:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: fastapi-backend
     ports:
       - "8000:8000"
+    volumes:
+      - .:/app
+      - ./clip_embedder/faiss_indexes:/app/clip_embedder/faiss_indexes
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
     deploy:
       resources:
         reservations:
           devices:
             - capabilities: [gpu]
+
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: streamlit-app
+    command: streamlit run streamlit_app.py --server.port=8501 --server.enableCORS=false
+    ports:
+      - "8501:8501"
     volumes:
       - .:/app
-      - ./clip_embedder/faiss_indexes:/app/clip_embedder/faiss_indexes  # 로컬 faiss_index → 컨테이너 내부 마운트
+    depends_on:
+      - backend
 
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-  
   pgvector:
     image: ankane/pgvector:latest
     container_name: pgvector-db
     ports:
       - "18152:5432"
     environment:
-      POSTGRES_DB: clipdb
+      POSTGRES_DB: clipdb  # creates clipdb automatically
       POSTGRES_USER: clipuser
       POSTGRES_PASSWORD: clippass
     volumes:

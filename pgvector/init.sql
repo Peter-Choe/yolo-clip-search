@@ -1,2 +1,3 @@
--- 이 SQL은 컨테이너 초기 실행 시 자동 실행
+-- This runs automatically on first container startup
+-- Enable vector extension in postgres (optional but harmless)
 CREATE EXTENSION IF NOT EXISTS vector;
