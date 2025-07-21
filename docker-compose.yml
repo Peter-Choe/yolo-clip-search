@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   backend:
     build:
@@ -11,6 +9,7 @@ services:
     volumes:
       - .:/app
       - ./clip_embedder/faiss_indexes:/app/clip_embedder/faiss_indexes
+      - ./datasets:/app/datasets
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
     deploy:

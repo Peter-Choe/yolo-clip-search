@@ -1,0 +1,34 @@
+# Unused directories
+yolov5/
+datasets/
+scripts/
+test/
+
+# Python cache & temp
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Jupyter/IPython
+*.ipynb
+*.ipynb_checkpoints/
+*.DS_Store
+
+# Git-related
+.git/
+.gitignore
+
+# media files 
+*.mp4
+*.jpg
+*.png
+*.json
+*.csv
+*.zip
+*.tar.gz
+
+# IDE/editor settings
+.vscode/
+.idea/

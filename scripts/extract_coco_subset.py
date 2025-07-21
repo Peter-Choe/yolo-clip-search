@@ -1,12 +1,8 @@
 import os
-import shutil
-import json
 from pycocotools.coco import COCO
-from tqdm import tqdm
 import random
-from datetime import datetime
 
-from clip_embedder.utils import safe_write_json
+from utils import safe_write_json
 """
 COCO Subset Split & Metadata Generator
 
@@ -121,6 +117,8 @@ def main():
 
     all_meta = {"train": [], "val": [], "test": []}  # 전체 메타데이터 초기화
 
+
+
     for cat_name in TARGET_CATEGORIES:
         cat_id = name2id[cat_name]  # 현재 카테고리 ID
         img_ids = coco.getImgIds(catIds=[cat_id])  # 해당 카테고리에 속하는 이미지 ID 목록
@@ -149,6 +147,12 @@ def main():
         safe_write_json(meta_data, meta_path)
         print(f"Saved {len(meta_data)} annotations to {meta_path}")
 
+    # === Save combined metadata: subset_meta_all.json ===
+    all_combined = all_meta["train"] + all_meta["val"] + all_meta["test"]
+    meta_all_path = os.path.join(meta_dir, "subset_meta_all.json")
+    safe_write_json(all_combined, meta_all_path)
+    print(f"[INFO] Saved {len(all_combined)} combined entries to {meta_all_path}")
+
     for split in ["train", "val", "test"]:
         class_counts = {}
         for entry in all_meta[split]:
@@ -158,6 +162,17 @@ def main():
         stats_path = os.path.join(meta_dir, f"class_counts_{split}.json")
         safe_write_json(class_counts, stats_path)
         print(f"Saved class count stats to {stats_path}")
+    
+    # === Save combined class count stats: class_counts_all.json ===
+    class_counts_all = {}
+    for entry in all_combined:
+        cat = entry["category"]
+        class_counts_all[cat] = class_counts_all.get(cat, 0) + 1
+
+    stats_all_path = os.path.join(meta_dir, "class_counts_all.json")
+    safe_write_json(class_counts_all, stats_all_path)
+    print(f"[INFO] Saved combined class count stats to {stats_all_path}")
+
 
 
 if __name__ == "__main__":

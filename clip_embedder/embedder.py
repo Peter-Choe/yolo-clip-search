@@ -18,4 +18,3 @@ def get_clip_embeddings(image_paths, batch_size=16):
         embeddings.extend(outputs.cpu().numpy())
     return embeddings
 
-

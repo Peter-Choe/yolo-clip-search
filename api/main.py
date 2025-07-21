@@ -4,7 +4,7 @@ from api.routes import detect
 from clip_embedder.db import engine
 from clip_embedder.schemas import Base
 
-# creates tables that don’t already exist in the database automatically on startup
+# Creates tables that don’t already exist in the database automatically on startup
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Image Search API")

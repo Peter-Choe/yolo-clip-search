@@ -1,16 +1,13 @@
 import os
 import json
 from tqdm import tqdm
-import sys
 import json
 import argparse
-import tempfile
-import shutil
 from tqdm import tqdm
 from sqlalchemy.exc import IntegrityError
 from PIL import Image
 from clip_embedder.schemas import ImageRecord, Crop
-from clip_embedder.utils import safe_write_json, load_metadata
+from clip_embedder.utils import load_metadata
 
 from clip_embedder.cropper import crop_objects_with_padding
 from clip_embedder.embedder import get_clip_embeddings
@@ -20,41 +17,41 @@ from clip_embedder.faiss_indexer import build_faiss_index_with_ids
 
 
 def run_pipeline(
-    split,
+    split,  # "train", "val", "test", or "all"
     db_url,
     root_dir,
     dataset_version,
     skip_faiss_indexing=False,
     use_gpu=True
 ):
-    # 예: datasets/coco_subset/version_4/subset_meta_val.json
-    meta_path = os.path.join(root_dir,"meta", f"subset_meta_{split}.json")
-    image_dir = os.path.join(root_dir, f"images/{split}")
-    
-    # crop 저장 디렉토리 및 해당 crop 메타데이터(json) 저장 경로
-    crop_output_dir = os.path.join(root_dir, f"crops/{split}") #crop 이미지 저장경로
-    meta_dir = os.path.join(root_dir, "meta")
-    os.makedirs(meta_dir, exist_ok=True)
-    crop_metadata_path = os.path.join(meta_dir, f"crop_metadata_{split}.json")
-
-    # FAISS 인덱스 저장 경로 (clip_embedder/faiss_indexes/faiss_index_v4_val.index 등)
-    faiss_index_dir = os.path.join("clip_embedder", "faiss_indexes")
-    os.makedirs(faiss_index_dir, exist_ok=True)
-
-    # 버전 이름에서 숫자만 추출 (예: "version_4" → "4")
-    version_suffix = dataset_version.split("_")[-1] if "version_" in dataset_version else dataset_version
-    faiss_index_path = os.path.join(faiss_index_dir, f"faiss_index_v{version_suffix}_{split}.index")
-
-    # crop 디렉토리 생성
-    os.makedirs(crop_output_dir, exist_ok=True)
-
+    # Load meta JSON
+    meta_path = os.path.join(root_dir, "meta", f"subset_meta_{split}.json")
     print(f"Loading annotation metadata from: {meta_path}")
     meta_data = load_metadata(meta_path)
 
-    print("Cropping objects from images (with filtering and optional resume)...")
+    # Image dir: if split is "all", you'll need to merge multiple folders dynamically
+    if split == "all":
+        image_dirs = [os.path.join(root_dir, f"images/{s}") for s in ["train", "val", "test"]]
+    else:
+        image_dirs = [os.path.join(root_dir, f"images/{split}")]
+
+    # Crop output dir and metadata output
+    crop_output_dir = os.path.join(root_dir, f"crops/{split}")
+    os.makedirs(crop_output_dir, exist_ok=True)
+    crop_metadata_path = os.path.join(root_dir, "meta", f"crop_metadata_{split}.json")
+
+    # FAISS output
+    faiss_index_dir = os.path.join("clip_embedder", "faiss_indexes")
+    os.makedirs(faiss_index_dir, exist_ok=True)
+    version_suffix = dataset_version.split("_")[-1]
+    faiss_index_path = os.path.join(faiss_index_dir, f"faiss_index_v{version_suffix}_{split}.index")
+
+    # Run crop manifest builder
+    print("Cropping objects from images...")
+
     crop_metadata_list = build_crop_manifest(
         meta_data,
-        image_dir=image_dir,
+        image_dir=image_dirs,   # Accepts a list of dirs
         crop_save_dir=crop_output_dir,
         manifest_path=crop_metadata_path,
     )
@@ -153,35 +150,45 @@ def run_pipeline(
         print(f"pg_ids saved to {pg_ids_path}")
 
 
-
 def build_crop_manifest(meta_data, image_dir, crop_save_dir, manifest_path, min_size=20, max_aspect_ratio=3.0):
-
     """
-    crop_objects()를 호출해 유효한 crop만 필터링
-    각 crop에 대한 메타데이터(image 경로, bbox 좌표, label 등)를 수집하여 반환
+    COCO 기반 메타데이터로부터 crop 수행 및 crop 메타정보 생성
 
     Args:
         meta_data (List[Dict]): subset_meta_xxx.json 로드된 COCO 유사 메타데이터
-        image_dir (str): 원본 이미지 디렉토리
+        image_dir (str or List[str]): 원본 이미지 디렉토리 또는 디렉토리 리스트
         crop_save_dir (str): crop된 이미지 저장 위치
         manifest_path (str): crop 메타데이터 JSON 저장 위치
+        min_size (int): 최소 crop 크기
+        max_aspect_ratio (float): 허용할 최대 종횡비
 
     Returns:
-        List[Dict]: 유효한 crop 목록. 각 항목은 다음 정보를 포함합니다:
-            - image_path (str): 원본 이미지 경로
-            - crop_path (str): crop 이미지 저장 경로
-            - label (str): category name
-            - x1, y1, x2, y2 (float): crop bbox 좌표
-            - width, height (int): 원본 이미지 크기
-            - file_name (str): 이미지 파일명
-            - coco_url (str): COCO 이미지 URL
+        List[Dict]: 유효한 crop 항목 리스트
     """
+
+    # image_dir이 str이면 리스트로 변환
+    if isinstance(image_dir, str):
+        image_dirs = [image_dir]
+    else:
+        image_dirs = image_dir
 
     crop_items = []
 
     for item in tqdm(meta_data, desc="Cropping objects"):
         filename = item["file_name"]
-        image_path = os.path.join(image_dir, filename)
+
+        # 여러 디렉토리 중 실제 파일이 존재하는 경로 선택
+        image_path = None
+        for dir_ in image_dirs:
+            candidate_path = os.path.join(dir_, filename)
+            if os.path.exists(candidate_path):
+                image_path = candidate_path
+                break
+
+        if image_path is None:
+            print(f"[WARN] File not found in any image_dir: {filename}")
+            continue
+
         bboxes = item.get("bboxes", [])
         labels = item.get("category_names", [])
         width = item.get("width", 0)
@@ -222,7 +229,7 @@ def build_crop_manifest(meta_data, image_dir, crop_save_dir, manifest_path, min_
             })
 
     with open(manifest_path, "w") as f:
-            json.dump(crop_items, f, indent=2)
+        json.dump(crop_items, f, indent=2)
     print(f"[INFO] Saved {len(crop_items)} crop entries to {manifest_path}")
 
     return crop_items

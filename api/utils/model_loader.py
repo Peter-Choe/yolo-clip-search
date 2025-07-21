@@ -20,21 +20,24 @@ from io import BytesIO
 download_from_gcs(
     bucket_name=config.GCS_BUCKET,
     gcs_path=config.GCS_MODEL_PATH,
-    local_path=config.LOCAL_MODEL_PATH
+    local_path=config.YOLO_MODEL_PATH
 )
 
-# Load model once (singleton)
-model = torch.hub.load("yolov5", "custom", path=config.LOCAL_MODEL_PATH, source="local")
-model.eval()
+# === YOLOv5 model (singleton load) ===
+print(f"[INFO] Loading YOLOv5 model from: {config.YOLO_MODEL_PATH}")
+yolo_model = torch.hub.load("yolov5", "custom", path=config.YOLO_MODEL_PATH, source="local")
+yolo_model.eval()
 
-
+# === CLIP model and processor ===
 device = "cuda" if torch.cuda.is_available() else "cpu"
-clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(device)
-clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+print(f"[INFO] Loading CLIP model ({config.CLIP_MODEL_NAME}) to {device}")
+clip_model = CLIPModel.from_pretrained(config.CLIP_MODEL_NAME).to(device)
+clip_processor = CLIPProcessor.from_pretrained(config.CLIP_MODEL_NAME)
 
-FAISS_INDEX_PATH = "clip_embedder/faiss_indexes/faiss_index_v4_train.index"
-PG_IDS_PATH = FAISS_INDEX_PATH.replace(".index", "_pg_ids.pkl")
+# === FAISS index and pg_ids ===
+print(f"[INFO] Loading FAISS index from: {config.FAISS_INDEX_PATH}")
+faiss_index = faiss.read_index(config.FAISS_INDEX_PATH)
 
-faiss_index = faiss.read_index(FAISS_INDEX_PATH)
-with open(PG_IDS_PATH, "rb") as f:
+print(f"[INFO] Loading PGVector IDs from: {config.PG_IDS_PATH}")
+with open(config.PG_IDS_PATH, "rb") as f:
     pg_ids: list = pickle.load(f)

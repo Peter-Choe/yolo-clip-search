@@ -2,7 +2,7 @@
 
 from api.utils.image_utils import load_image_from_bytes
 from api.utils.model_utils import download_from_gcs
-from api.utils.model_loader import model
+from api.utils.model_loader import yolo_model
 from api import config
 import torch
 import os
@@ -10,7 +10,7 @@ import os
 
 def detect_bboxes_from_pil(pil_img, conf_thres=0.25):
     """Run detection on PIL image and return bounding boxes"""
-    results = model(pil_img)
+    results = yolo_model(pil_img)
     raw_detections = results.pandas().xyxy[0].to_dict(orient="records")
     
     return [
