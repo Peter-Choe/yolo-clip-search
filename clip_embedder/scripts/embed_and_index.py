@@ -12,7 +12,7 @@ from PIL import Image
 from clip_embedder.models import ImageRecord, Crop
 from clip_embedder.utils import safe_write_json, load_metadata
 
-from clip_embedder.cropper import crop_objects
+from clip_embedder.cropper import crop_objects_with_padding
 from clip_embedder.embedder import get_clip_embeddings
 from clip_embedder.db import init_db
 from clip_embedder.faiss_indexer import build_faiss_index_with_ids
@@ -192,7 +192,7 @@ def build_crop_manifest(meta_data, image_dir, crop_save_dir, manifest_path, min_
             continue
 
         try:
-            crop_results = crop_objects(
+            crop_results = crop_objects_with_padding(
                 image_path=image_path,
                 bboxes=bboxes,
                 save_dir=crop_save_dir,

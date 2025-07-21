@@ -4,25 +4,33 @@ import os
 import pickle
 
 
-def build_faiss_index_with_ids(embeddings, ids, save_path, use_gpu=False):
+import faiss
+import numpy as np
+
+def build_faiss_index_with_ids(
+    embeddings: np.ndarray,
+    ids: list[int],
+    save_path: str,
+    use_gpu: bool = False
+):
     """
+    CLIP 임베딩 기반의 FAISS Index 생성 (Inner Product 기반)
+    cosine similarity = normalized embeddings + inner product
+
     Args:
-        embeddings (np.ndarray or List[List[float]]): shape (N, dim)
-        ids (List[int]): PGVector에서 저장된 고유 ID
-        save_path (str): 저장할 .index 파일 경로
-        use_gpu (bool): GPU 인덱스 사용 여부 (기본 False)
+        embeddings: shape (N, dim), 반드시 float32로 L2 정규화되어 있어야 함
+        ids: Crop.id와 매핑되는 고유 ID 리스트
+        save_path: 저장할 .index 파일 경로
+        use_gpu: GPU 인덱싱 사용 여부
     """
     embeddings = np.array(embeddings).astype("float32")
-    dim = embeddings.shape[1]
     ids = np.array(ids).astype("int64")
 
-    # Index 생성
-    index = faiss.IndexFlatL2(dim)
-    """
-    CLIP 임베딩은 일반적으로 cosine similarity 기반으로 의미를 비교하며
-    L2 거리로 cosine 유사도와 같은 순서로 검색하려면, 벡터는 정규화되어야 함
-    FAISS는 cosine이 아닌 L2나 Inner Product를 계산
-    """
+    # cosine 유사도와 동일한 정렬 순서를 위해 L2 정규화
+    faiss.normalize_L2(embeddings)
+
+    dim = embeddings.shape[1]
+    index = faiss.IndexFlatIP(dim)  # Inner Product 기반 인덱스
 
     if use_gpu:
         print("Using GPU for FAISS indexing...")
@@ -32,12 +40,48 @@ def build_faiss_index_with_ids(embeddings, ids, save_path, use_gpu=False):
     index_with_ids = faiss.IndexIDMap(index)
     index_with_ids.add_with_ids(embeddings, ids)
 
-    # 저장 시 GPU index는 CPU로 변환 후 저장
     if use_gpu:
         index_with_ids = faiss.index_gpu_to_cpu(index_with_ids)
 
     faiss.write_index(index_with_ids, save_path)
-    print(f"FAISS index saved to {save_path}")
+    print(f"[INFO] FAISS index saved to {save_path}")
+
+
+
+# def build_faiss_index_with_ids(embeddings, ids, save_path, use_gpu=False):
+#     """
+#     Args:
+#         embeddings (np.ndarray or List[List[float]]): shape (N, dim)
+#         ids (List[int]): PGVector에서 저장된 고유 ID
+#         save_path (str): 저장할 .index 파일 경로
+#         use_gpu (bool): GPU 인덱스 사용 여부 (기본 False)
+#     """
+#     embeddings = np.array(embeddings).astype("float32")
+#     dim = embeddings.shape[1]
+#     ids = np.array(ids).astype("int64")
+
+#     # Index 생성
+#     index = faiss.IndexFlatL2(dim)
+#     """
+#     CLIP 임베딩은 일반적으로 cosine similarity 기반으로 의미를 비교하며
+#     L2 거리로 cosine 유사도와 같은 순서로 검색하려면, 벡터는 정규화되어야 함
+#     FAISS는 cosine이 아닌 L2나 Inner Product를 계산
+#     """
+
+#     if use_gpu:
+#         print("Using GPU for FAISS indexing...")
+#         res = faiss.StandardGpuResources()
+#         index = faiss.index_cpu_to_gpu(res, 0, index)
+
+#     index_with_ids = faiss.IndexIDMap(index)
+#     index_with_ids.add_with_ids(embeddings, ids)
+
+#     # 저장 시 GPU index는 CPU로 변환 후 저장
+#     if use_gpu:
+#         index_with_ids = faiss.index_gpu_to_cpu(index_with_ids)
+
+#     faiss.write_index(index_with_ids, save_path)
+#     print(f"FAISS index saved to {save_path}")
 
 
 

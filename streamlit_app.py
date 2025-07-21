@@ -40,5 +40,5 @@ if uploaded_file:
 
         st.subheader("유사 이미지 결과")
         for i, r in enumerate(data["results"]):
-            st.markdown(f"**{i+1}. Label:** {r['label']} | **Score:** {r['score']:.4f}")
+            st.markdown(f"**{i+1}. Label:** {r['label']} | **Cosine Similarity:** {r['similarity']:.4f}")
             st.image("data:image/jpeg;base64," + r["image"]["image_base64"])
