@@ -1,5 +1,7 @@
 name: image_search
 channels:
+  - pytorch
+  - nvidia
   - conda-forge
 dependencies:
   - python=3.11
@@ -13,6 +15,7 @@ dependencies:
   - matplotlib
   - seaborn
   - tqdm
-  - pytorch
+  - pytorch=2.6.0
   - torchvision
   - torchaudio
+  - pytorch-cuda=11.8  # CUDA 11.8 환경에 맞춤
