@@ -51,6 +51,13 @@ FastAPI API 서버와 Streamlit UI를 통해 사용자 친화적인 인터페이
 
 📍 **MLflow UI 접속**: [http://34.64.149.44:5000](http://34.64.149.44:5000)
 
+### 📊 모델 성능 예시 (Confusion Matrix)
+
+아래는 YOLOv5 모델을 활용하여 훈련한 후, 검증셋에서 추론한 혼동 행렬(confusion matrix)입니다.
+
+![Confusion Matrix](assets/confusion_matrix.png)
+
+
 ### 학습 예시 (`train_mlflow.py`)
 
 ```bash
