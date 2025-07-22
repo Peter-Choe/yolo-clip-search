@@ -77,7 +77,16 @@ python yolov5/evaluate.py \
 
 ## 🔧 데이터셋 준비 및 인덱싱
 
-### 1. COCO 서브셋 생성
+
+### 1. COCO 원본 데이터 다운로드
+
+`datasets/coco/` 디렉토리에 아래 두 가지가 필요합니다:
+
+- `train2017/`: 학습 이미지 디렉토리
+- `annotations/instances_train2017.json`: 어노테이션 파일
+
+
+### 2. COCO 서브셋 생성
 
 ```bash
 python scripts/extract_coco_subset.py
@@ -89,7 +98,7 @@ python scripts/extract_coco_subset.py
 
 > 🔹 저장 위치: `datasets/coco_subset/version_4/`
 
-### 2. CLIP 임베딩 + 인덱싱
+### 3. CLIP 임베딩 + 인덱싱
 
 ```bash
 python -m clip_embedder.scripts.embed_and_index \
