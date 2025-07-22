@@ -14,7 +14,9 @@ services:
     volumes:
       - ./clip_embedder/faiss_indexes:/app/clip_embedder/faiss_indexes
       - ./datasets:/app/datasets
+      - /home/hjchoi/keys/mlfow-server-eb2f26e0349a.json:/app/secrets/gcp-credentials.json
     environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/gcp-credentials.json
       - NVIDIA_VISIBLE_DEVICES=all
     deploy:
       resources:
