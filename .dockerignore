@@ -15,7 +15,7 @@ __pycache__/
 *.md
 
 # Unused project folders
-yolov5/
+yolov5/runs/
 datasets/
 scripts/
 test/
