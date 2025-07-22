@@ -8,29 +8,36 @@ ENV TZ=Asia/Seoul
 RUN apt-get update && apt-get install -y \
     wget curl git build-essential ffmpeg \
     libglib2.0-0 libsm6 libxext6 libxrender-dev libgl1-mesa-glx \
-    unzip ca-certificates python3-pip python3-dev python3-setuptools \
+    unzip ca-certificates python3-dev python3-setuptools \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Miniconda 설치
 ENV CONDA_DIR=/opt/conda
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
-    /bin/bash ~/miniconda.sh -b -p $CONDA_DIR && \
-    rm ~/miniconda.sh
 ENV PATH=$CONDA_DIR/bin:$PATH
+RUN wget --quiet https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O ~/miniforge.sh && \
+    bash ~/miniforge.sh -b -p $CONDA_DIR && \
+    rm ~/miniforge.sh
 
-# 3. Conda 환경 생성 및 faiss-gpu 포함 패키지 설치 (env name = image_search)
+# 3. Conda 환경 생성
 COPY environment.yaml /tmp/environment.yaml
-RUN conda update -n base -c defaults conda && \
-    conda env create -f /tmp/environment.yaml && \
+COPY requirements.txt /tmp/requirements.txt   
+SHELL ["/bin/bash", "-c"]
+RUN conda install -n base -c conda-forge mamba -y && \
+    mamba env create -f /tmp/environment.yaml && \
     conda clean -a
-ENV CONDA_DEFAULT_ENV=image_search
-ENV PATH=$CONDA_DIR/envs/image_search/bin:$PATH
 
-# 4. 작업 디렉토리
+# pip install 시 numpy 재설치 방지 + pydantic 고정
+RUN conda run -n image_search pip install --no-deps -r /tmp/requirements.txt && \
+    conda run -n image_search pip install numpy==1.26.4 --force-reinstall && \
+    conda run -n image_search pip uninstall -y pydantic_core
+
+# 5. 작업 디렉토리
 WORKDIR /app
 COPY . /app
+RUN mkdir -p /app/models
 
-# 5. FastAPI 실행 포트
+# 6. 환경 변수 및 포트
+ENV CONDA_DEFAULT_ENV=image_search
+ENV PATH=$CONDA_DIR/envs/image_search/bin:$PATH
 EXPOSE 8000
-
-# CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 8501

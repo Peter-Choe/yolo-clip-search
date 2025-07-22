@@ -12,6 +12,9 @@ build/
 # === Jupyter Notebooks ===
 .ipynb_checkpoints/
 
+#
+clip_embedder/faiss_indexes/
+
 # === Environment Files ===
 .env
 .env.*

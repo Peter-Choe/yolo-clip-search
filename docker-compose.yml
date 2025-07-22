@@ -1,13 +1,17 @@
+version: "3.9"
+
 services:
   backend:
     build:
       context: .
       dockerfile: Dockerfile
+    image: image_search:latest
     container_name: fastapi-backend
+    command: >
+      conda run -n image_search --no-capture-output uvicorn api.main:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
       - ./clip_embedder/faiss_indexes:/app/clip_embedder/faiss_indexes
       - ./datasets:/app/datasets
     environment:
@@ -17,17 +21,15 @@ services:
         reservations:
           devices:
             - capabilities: [gpu]
+    runtime: nvidia  
 
   streamlit:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: image_search:latest
     container_name: streamlit-app
-    command: streamlit run streamlit_app.py --server.port=8501 --server.enableCORS=false
+    command: >
+      conda run -n image_search --no-capture-output streamlit run streamlit_app.py --server.port=8501 --server.enableCORS=false
     ports:
       - "8501:8501"
-    volumes:
-      - .:/app
     depends_on:
       - backend
 
@@ -37,7 +39,7 @@ services:
     ports:
       - "18152:5432"
     environment:
-      POSTGRES_DB: clipdb  # creates clipdb automatically
+      POSTGRES_DB: clipdb
       POSTGRES_USER: clipuser
       POSTGRES_PASSWORD: clippass
     volumes:

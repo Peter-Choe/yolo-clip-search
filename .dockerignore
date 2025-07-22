@@ -1,34 +1,46 @@
-# Unused directories
+# ========================
+# Directories to exclude
+# ========================
+__pycache__/
+*.py[cod]
+*.so
+*.log
+*.swp
+*.ipynb
+.ipynb_checkpoints/
+.env
+.env.*
+.vscode/
+.idea/
+*.md
+
+# Unused project folders
 yolov5/
 datasets/
 scripts/
 test/
+models/
+runs/
+# FAISS index 
+clip_embedder/faiss_indexes/
 
-# Python cache & temp
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.log
-
-# Jupyter/IPython
-*.ipynb
-*.ipynb_checkpoints/
-*.DS_Store
-
-# Git-related
+# Git & config files
 .git/
 .gitignore
+Dockerfile
+docker-compose.override.yml
 
-# media files 
+# Heavy artifacts
 *.mp4
 *.jpg
+*.jpeg
 *.png
-*.json
-*.csv
 *.zip
 *.tar.gz
+*.csv
+*.json
 
-# IDE/editor settings
-.vscode/
-.idea/
+# Build cache
+*.egg-info/
+dist/
+build/
