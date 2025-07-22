@@ -31,13 +31,14 @@ RUN conda run -n image_search pip install --no-deps -r /tmp/requirements.txt && 
     conda run -n image_search pip install "pydantic==1.10.13" --force-reinstall && \
     conda run -n image_search pip uninstall -y pydantic_core && \
     conda run -n image_search pip install numpy==1.26.4 --force-reinstall
-    
+
 # 5. 작업 디렉토리
 WORKDIR /app
 COPY . /app
 RUN mkdir -p /app/models
 
 # 6. 환경 변수 및 포트
+ENV PYTHONPATH=/app
 ENV CONDA_DEFAULT_ENV=image_search
 ENV PATH=$CONDA_DIR/envs/image_search/bin:$PATH
 EXPOSE 8000

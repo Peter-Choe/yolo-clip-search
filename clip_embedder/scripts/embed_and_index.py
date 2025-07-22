@@ -253,15 +253,20 @@ if __name__ == "__main__":
 
     from dotenv import load_dotenv
     load_dotenv()
-    db_url = os.getenv("PGVECTOR_URL")
-    if not db_url:
-        raise ValueError("PGVECTOR_URL not set in .env file")
-    
-    print(f' ==============db_url: {db_url}===========')
+  
+    # Docker 환경 여부 감지: Docker 컨테이너 안에는 이 파일이 항상 존재
+    IS_DOCKER = os.path.exists("/.dockerenv")
+
+    # PGVECTOR_URL or PGVECTOR_URL_LOCAL 선택
+    DB_URL = os.getenv("PGVECTOR_URL" if IS_DOCKER else "PGVECTOR_URL_LOCAL")
+    if not DB_URL:
+        raise ValueError(" PGVECTOR_URL or PGVECTOR_URL_LOCAL not set properly in .env")
+
+    print(f"[INFO] Connecting to DB: {DB_URL}")
     
     run_pipeline(
     split=args.split,
-    db_url=db_url,
+    db_url=DB_URL,
     root_dir=args.dataset_path,
     dataset_version=os.path.basename(args.dataset_path),
     #resume=args.resume,

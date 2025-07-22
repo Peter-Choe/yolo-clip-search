@@ -18,6 +18,8 @@ services:
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/gcp-credentials.json
       - NVIDIA_VISIBLE_DEVICES=all
+    env_file:
+      - .env               
     deploy:
       resources:
         reservations:
@@ -41,7 +43,7 @@ services:
     ports:
       - "18152:5432"
     environment:
-      POSTGRES_DB: clipdb
+      POSTGRES_DB: clipdb_v2
       POSTGRES_USER: clipuser
       POSTGRES_PASSWORD: clippass
     volumes:

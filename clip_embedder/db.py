@@ -16,7 +16,16 @@ def init_db(db_url):
 
 
 
-DB_URL = os.getenv("PGVECTOR_URL")
+# Docker 환경 여부 감지: Docker 컨테이너 안에는 이 파일이 항상 존재
+IS_DOCKER = os.path.exists("/.dockerenv")
+
+# PGVECTOR_URL or PGVECTOR_URL_LOCAL 선택
+DB_URL = os.getenv("PGVECTOR_URL" if IS_DOCKER else "PGVECTOR_URL_LOCAL")
+if not DB_URL:
+    raise ValueError(" PGVECTOR_URL or PGVECTOR_URL_LOCAL not set properly in .env")
+
+print(f"[INFO] Connecting to DB: {DB_URL}")
+
 engine = create_engine(DB_URL)
 SessionLocal = sessionmaker(bind=engine)
 
