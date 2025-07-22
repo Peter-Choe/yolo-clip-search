@@ -198,7 +198,7 @@ streamlit run streamlit_app.py
 
 ## 🔮 향후 개선 방향
 
-- ✅ GCP VM에서 Docker Compose로 배포 중 (로컬 WSL과 동일한 구조)
+- ✅ GCP VM에 Docker Compose로 배포 준비 중 
 - 🔄 Cloud Run / Vertex AI 기반의 MLOps 파이프라인으로 확장 가능
 - 🔄 Celery 또는 Ray 기반 멀티 동시 추론 구조 도입
 - 🔄 RAG 또는 Vision-Language 모델 기반 설명 생성 기능 연동

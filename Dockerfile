@@ -28,9 +28,10 @@ RUN conda install -n base -c conda-forge mamba -y && \
 
 # pip install 시 numpy 재설치 방지 + pydantic 고정
 RUN conda run -n image_search pip install --no-deps -r /tmp/requirements.txt && \
-    conda run -n image_search pip install numpy==1.26.4 --force-reinstall && \
-    conda run -n image_search pip uninstall -y pydantic_core
-
+    conda run -n image_search pip install "pydantic==1.10.13" --force-reinstall && \
+    conda run -n image_search pip uninstall -y pydantic_core && \
+    conda run -n image_search pip install numpy==1.26.4 --force-reinstall
+    
 # 5. 작업 디렉토리
 WORKDIR /app
 COPY . /app
