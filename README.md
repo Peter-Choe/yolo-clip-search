@@ -130,7 +130,7 @@ Streamlit UI에서 `"텍스트 입력"` 모드를 선택하면, 입력한 단어
 
 - `/api/search_text` 엔드포인트를 통해 백엔드 FastAPI로 쿼리 전달
 - 텍스트는 CLIP text encoder로 임베딩되어 FAISS에서 유사 이미지 검색
-- 결과는 label, similarity 점수와 함께 UI에 출력됩니다
+- 결과는 label, similarity 점수와 함께 UI에 출력됩니다.
 
 > ✅ 이미지 없이 키워드만으로도 관련 이미지를 검색할 수 있습니다.
 
