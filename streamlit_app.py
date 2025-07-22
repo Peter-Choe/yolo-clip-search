@@ -1,6 +1,11 @@
 import streamlit as st
 import requests
 from PIL import Image
+import os
+
+# --- 도커 환경 여부 판단 ---
+IS_DOCKER = os.path.exists("/.dockerenv")
+API_HOST = "fastapi-backend" if IS_DOCKER else "localhost"
 
 st.set_page_config(page_title="유사 이미지 검색", layout="centered")
 st.title("유사 이미지 검색 (YOLO + CLIP + FAISS + PGVector)")
@@ -43,7 +48,7 @@ if search_mode == "이미지 업로드":
         files = {"file": (uploaded_file.name, uploaded_file, uploaded_file.type)}
 
         with st.spinner("유사 이미지 검색 중..."):
-            response = requests.post("http://localhost:5000/api/search", files=files)
+            response = requests.post(f"http://{API_HOST}:8000/api/search", files=files)
 
         if response.ok:
             show_results(response.json())
@@ -56,7 +61,7 @@ elif search_mode == "텍스트 입력":
 
     if query_text:
         with st.spinner("텍스트 기반 이미지 검색 중..."):
-            response = requests.post("http://localhost:5000/api/search_text", json={"text": query_text})
+            response = requests.post(f"http://{API_HOST}:8000/api/search_text", json={"text": query_text})
 
         if response.ok:
             show_results(response.json(), is_text=True, query=query_text)
