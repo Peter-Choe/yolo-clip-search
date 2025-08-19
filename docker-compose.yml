@@ -47,8 +47,6 @@ services:
       POSTGRES_USER: clipuser
       POSTGRES_PASSWORD: clippass
     volumes:
-      - pgvector_data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql/data
       - ./pgvector/init.sql:/docker-entrypoint-initdb.d/init.sql
 
-volumes:
-  pgvector_data:

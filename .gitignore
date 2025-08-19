@@ -65,6 +65,7 @@ faiss_output/
 # === PGVector DB Files ===
 *.pgdata
 pgvector_data/
+postgres_data/
 
 # === Docker ===
 *.pid
